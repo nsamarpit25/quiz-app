@@ -19,7 +19,7 @@ export default function Questions({ quiz }: Props) {
    const [duration, setDuration] = useState<number>(0);
 
    // Add new states for timer
-   const QUIZ_TIME = 10; // 5 minutes in seconds
+   const QUIZ_TIME = quiz.duration * 60; // 5 minutes in seconds
    const [timeLeft, setTimeLeft] = useState(QUIZ_TIME);
 
    // start the timer
