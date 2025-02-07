@@ -6,9 +6,7 @@ A modern quiz application built with Next.js.
 
 -  Interactive quiz interface
 -  Real-time scoring
--  Multiple quiz categories
 -  Responsive design
--  User authentication
 -  Score tracking
 
 ## Installation
@@ -48,15 +46,6 @@ yarn dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Production Build
-
-```bash
-npm run build
-npm start
-# or
-yarn build
-yarn start
-```
 
 ## Project Structure
 
@@ -76,14 +65,4 @@ quiz-app/
 -  [Tailwind CSS](https://tailwindcss.com/)
 -  [TypeScript](https://www.typescriptlang.org/)
 
-## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
