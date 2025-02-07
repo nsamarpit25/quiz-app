@@ -1,5 +1,5 @@
 import type { Quiz } from "@/helper";
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Props {
    quiz: Quiz;
@@ -17,6 +17,43 @@ export default function Questions({ quiz }: Props) {
    // if questions are completed
    const [showResults, setShowResults] = useState(false);
 
+   // Add new state for duration
+   const [startTime, setStartTime] = useState<number>(0);
+   const [duration, setDuration] = useState<number>(0);
+
+   // Add new states for timer
+   const QUIZ_TIME = quiz.duration * 60; // 5 minutes in seconds
+   const [timeLeft, setTimeLeft] = useState(QUIZ_TIME);
+
+   // Add useEffect to set start time when component mounts
+   useEffect(() => {
+      setStartTime(Date.now());
+   }, []);
+
+   // Add auto-submit functionality
+   useEffect(() => {
+      if (!showResults) {
+         const timer = setInterval(() => {
+            setTimeLeft((prevTime) => {
+               if (prevTime <= 1) {
+                  clearInterval(timer);
+                  // Auto submit when time runs out
+                  const endTime = Date.now();
+                  const totalDuration = Math.floor(
+                     (endTime - startTime) / 1000
+                  );
+                  setDuration(totalDuration);
+                  setShowResults(true);
+                  return 0;
+               }
+               return prevTime - 1;
+            });
+         }, 1000);
+
+         return () => clearInterval(timer);
+      }
+   }, [showResults, startTime]);
+
    // get current question
    const currentQuestion = quiz.questions[currentQuestionIndex];
 
@@ -28,13 +65,25 @@ export default function Questions({ quiz }: Props) {
       }));
    };
 
-   // handle next question
+   // Modify handleNext to not handle time calculations (now handled in timer)
    const handleNext = () => {
       if (currentQuestionIndex < quiz.questions.length - 1) {
          setCurrentQuestionIndex((prev) => prev + 1);
       } else {
+         const endTime = Date.now();
+         const totalDuration = Math.floor((endTime - startTime) / 1000);
+         setDuration(totalDuration);
          setShowResults(true);
       }
+   };
+
+   // Modified restart function
+   const handleRestart = () => {
+      setCurrentQuestionIndex(0);
+      setSelectedAnswers({});
+      setShowResults(false);
+      setTimeLeft(QUIZ_TIME);
+      setStartTime(Date.now());
    };
 
    // calculate score
@@ -51,63 +100,119 @@ export default function Questions({ quiz }: Props) {
             score++;
          }
       });
-      return score;
+      return { score, duration }; // Return both score and duration
+   };
+
+   // Format time function
+   const formatTime = (seconds: number) => {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
    };
 
    // render
    if (showResults) {
       return (
-         <div className="min-h-screen bg-gray-900 p-8">
-            <div className="max-w-2xl mx-auto bg-gray-800 rounded-xl p-8 shadow-lg">
-               <h2 className="text-3xl font-bold mb-6 text-white">
-                  Quiz Complete! 🎉
-               </h2>
-               <div className="text-2xl text-emerald-400">
-                  Your Score: {calculateScore()} out of {quiz.questions.length}
-               </div>
-               <div className="mt-4 text-gray-400">
-                  {calculateScore() === quiz.questions.length
-                     ? "Perfect score! Excellent work! 🌟"
-                     : "Keep practicing to improve! 💪"}
-               </div>
+         <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-8">
+            <div className="max-w-3xl mx-auto">
+               <div className="bg-white/10 rounded-xl p-8 backdrop-blur-sm">
+                  <h2 className="text-4xl font-bold text-white mb-4">
+                     Quiz Results
+                  </h2>
 
-               <div className="mt-8">
-                  <h3 className="text-xl font-bold text-white mb-4">
-                     Correct Answers
-                  </h3>
-                  <ul className="space-y-2">
-                     {quiz.questions.map((question) => {
+                  <div className="flex items-center justify-between mb-8 p-4 bg-white/5 rounded-lg">
+                     <div>
+                        <p className="text-gray-400">Final Score</p>
+                        <p className="text-3xl font-bold text-white">
+                           {calculateScore().score} / {quiz.questions.length}
+                        </p>
+                     </div>
+                     <div>
+                        <p className="text-gray-400">Time Taken</p>
+                        <p className="text-3xl font-bold text-white">
+                           {calculateScore().duration} seconds
+                        </p>
+                     </div>
+                     <div>
+                        <p className="text-gray-400">Accuracy</p>
+                        <p className="text-3xl font-bold text-white">
+                           {Math.round(
+                              (calculateScore().score / quiz.questions.length) *
+                                 100
+                           )}
+                           %
+                        </p>
+                     </div>
+                  </div>
+
+                  <div className="space-y-6">
+                     <h3 className="text-2xl font-semibold text-white mb-4">
+                        Detailed Review
+                     </h3>
+                     {quiz.questions.map((question, index) => {
                         const selectedOptionId = selectedAnswers[question.id];
                         const correctOption = question.options.find(
                            (opt) => opt.is_correct
                         );
+                        const isCorrect =
+                           selectedOptionId === correctOption?.id;
+
                         return (
-                           <li key={question.id}>
-                              <h4 className="text-lg font-semibold text-white">
-                                 {question.description}
-                              </h4>
-                              <p className="text-gray-400">
-                                 {selectedOptionId === correctOption?.id
-                                    ? "You got it right! 🎉"
-                                    : "Oops! You missed this one! 😔"}
-                              </p>
-                           </li>
+                           <div
+                              key={question.id}
+                              className={`p-6 rounded-lg ${
+                                 isCorrect ? "bg-green-900/20" : "bg-red-900/20"
+                              }`}
+                           >
+                              <div className="flex items-center gap-4 mb-2">
+                                 <span className="text-lg font-medium text-gray-400">
+                                    Q{index + 1}
+                                 </span>
+                                 <h4 className="text-lg font-semibold text-white">
+                                    {question.description}
+                                 </h4>
+                              </div>
+
+                              <div className="ml-8 space-y-2">
+                                 <div className="flex items-center gap-2">
+                                    <span
+                                       className={`text-${
+                                          isCorrect ? "green" : "red"
+                                       }-400`}
+                                    >
+                                       {isCorrect ? "✓" : "✗"}
+                                    </span>
+                                    <p className="text-gray-300">
+                                       Your answer:{" "}
+                                       {question.options.find(
+                                          (opt) => opt.id === selectedOptionId
+                                       )?.description || "Not answered"}
+                                    </p>
+                                 </div>
+
+                                 {!isCorrect && (
+                                    <div className="flex items-center gap-2">
+                                       <span className="text-green-400">✓</span>
+                                       <p className="text-gray-300">
+                                          Correct answer:{" "}
+                                          {correctOption?.description}
+                                       </p>
+                                    </div>
+                                 )}
+                              </div>
+                           </div>
                         );
                      })}
-                  </ul>
-               </div>
+                  </div>
 
-               <div>
-                  <button
-                     onClick={() => {
-                        setCurrentQuestionIndex(0);
-                        setSelectedAnswers({});
-                        setShowResults(false);
-                     }}
-                     className="mt-8 px-6 py-3 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 transition-all"
-                  >
-                     Restart Quiz
-                  </button>
+                  <div className="mt-8 flex justify-center">
+                     <button
+                        onClick={handleRestart}
+                        className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                     >
+                        Restart Quiz
+                     </button>
+                  </div>
                </div>
             </div>
          </div>
@@ -115,11 +220,14 @@ export default function Questions({ quiz }: Props) {
    }
 
    return (
-      <div className="min-h-screen bg-gray-900 p-4 md:p-8">
+      <div className="min-h-screen bg-gray-900 p-4 md:p-8 w-full">
          <div className="max-w-2xl mx-auto bg-gray-800 rounded-xl p-6 shadow-lg">
             <div className="flex justify-between items-center mb-6">
                <span className="text-emerald-400 font-medium">
                   Question {currentQuestionIndex + 1}/{quiz.questions.length}
+               </span>
+               <span className="text-emerald-400 font-medium">
+                  Time Left: {formatTime(timeLeft)}
                </span>
                <span className="text-gray-400">
                   {Math.floor(
