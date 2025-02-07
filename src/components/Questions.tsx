@@ -8,29 +8,26 @@ interface Props {
 export default function Questions({ quiz }: Props) {
    // index for current question
    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-
    // record of selected answers
    const [selectedAnswers, setSelectedAnswers] = useState<
       Record<number, number>
    >({});
-
    // if questions are completed
    const [showResults, setShowResults] = useState(false);
-
    // Add new state for duration
    const [startTime, setStartTime] = useState<number>(0);
    const [duration, setDuration] = useState<number>(0);
 
    // Add new states for timer
-   const QUIZ_TIME = quiz.duration * 60; // 5 minutes in seconds
+   const QUIZ_TIME = 10; // 5 minutes in seconds
    const [timeLeft, setTimeLeft] = useState(QUIZ_TIME);
 
-   // Add useEffect to set start time when component mounts
+   // start the timer
    useEffect(() => {
       setStartTime(Date.now());
    }, []);
 
-   // Add auto-submit functionality
+   // restart on tie over
    useEffect(() => {
       if (!showResults) {
          const timer = setInterval(() => {
@@ -65,7 +62,7 @@ export default function Questions({ quiz }: Props) {
       }));
    };
 
-   // Modify handleNext to not handle time calculations (now handled in timer)
+   // handle next question
    const handleNext = () => {
       if (currentQuestionIndex < quiz.questions.length - 1) {
          setCurrentQuestionIndex((prev) => prev + 1);
@@ -77,7 +74,7 @@ export default function Questions({ quiz }: Props) {
       }
    };
 
-   // Modified restart function
+   // restart the quiz
    const handleRestart = () => {
       setCurrentQuestionIndex(0);
       setSelectedAnswers({});
@@ -86,7 +83,7 @@ export default function Questions({ quiz }: Props) {
       setStartTime(Date.now());
    };
 
-   // calculate score
+   // score calculation
    const calculateScore = () => {
       let score = 0;
       quiz.questions.forEach((question) => {
@@ -103,14 +100,14 @@ export default function Questions({ quiz }: Props) {
       return { score, duration }; // Return both score and duration
    };
 
-   // Format time function
+   // format time
    const formatTime = (seconds: number) => {
       const minutes = Math.floor(seconds / 60);
       const remainingSeconds = seconds % 60;
       return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
    };
 
-   // render
+   // results  on submit
    if (showResults) {
       return (
          <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-8">
@@ -218,7 +215,7 @@ export default function Questions({ quiz }: Props) {
          </div>
       );
    }
-
+   // quiz
    return (
       <div className="min-h-screen bg-gray-900 p-4 md:p-8 w-full">
          <div className="max-w-2xl mx-auto bg-gray-800 rounded-xl p-6 shadow-lg">
